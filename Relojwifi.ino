@@ -15,12 +15,11 @@ NTPClient timeClient(ntpUDP, "pool.ntp.org", -3 * 3600, 60000); // UTC-3, actual
 
 WiFiManager wifiManager;
 
-unsigned long previousMillis = 0;  // Para manejar el intervalo
-const long interval = 1000;        // Intervalo de 1 segundo
-
-unsigned long lastUpdateTime = 0;  // Última hora sincronizada desde el servidor NTP (en segundos)
-unsigned long localSeconds = 0;    // Tiempo local en segundos basado en millis()
-bool ntpSync = false;              // Indica si se ha sincronizado con NTP
+unsigned long previousMillis = 0;       // Para manejar el intervalo
+const long interval = 1000;             // Intervalo de 1 segundo
+unsigned long lastUpdateTime = 0;       // Última hora sincronizada desde el servidor NTP (en segundos)
+unsigned long localSeconds = 0;         // Tiempo local en segundos basado en millis()
+bool ntpSync = false;                   // Indica si se ha sincronizado con NTP
 
 void setup() {
   Serial.begin(115200);
@@ -48,19 +47,23 @@ void setup() {
 }
 
 void loop() {
+  FastLED.clear();
   updateLocalTime();
-
+   
   if (WiFi.status() == WL_CONNECTED) {
     reconnectWiFi();
+    FastLED.clear();
     if (timeClient.update()) {
       lastUpdateTime = timeClient.getEpochTime();
       localSeconds = lastUpdateTime;
       ntpSync = true;
       Serial.println("Sincronización NTP exitosa.");
+      FastLED.clear();
     }
   } else {
     ntpSync = false;
     Serial.println("Conexión WiFi perdida, usando tiempo local.");
+    FastLED.clear();
   }
 
   // Convertir localSeconds a hora, minuto y segundo
@@ -77,18 +80,19 @@ void updateLocalTime() {
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
-    localSeconds++;
+    localSeconds++; // Incrementa el tiempo local independientemente de la red
   }
 }
 
 void reconnectWiFi() {
+  
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("Reconectando a WiFi...");
     WiFi.begin(); // Reintenta conectar con las credenciales almacenadas
     unsigned long startAttemptTime = millis();
     while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 10000) {
-      delay(500);
-      Serial.print(".");
+      //delay(10);
+      //Serial.print(".");
     }
     if (WiFi.status() == WL_CONNECTED) {
       Serial.println("Reconexión exitosa");
@@ -96,9 +100,11 @@ void reconnectWiFi() {
       Serial.println("Falló la reconexión");
     }
   }
+  
 }
 
 void updateDisplay(String hour, String minute, String second) {
+  //FastLED.clear(); // Limpia cualquier LED encendido anteriormente
   drawDigit(hour.charAt(0) - '0', 0, CRGB::White);
   drawDigit(hour.charAt(1) - '0', 64, CRGB::White);
   drawDigit(minute.charAt(0) - '0', 128, CRGB::White);
